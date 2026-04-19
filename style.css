@@ -260,23 +260,6 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.message {
-  min-height: 24px;
-  margin: 8px 0 0;
-  font-weight: bold;
-}
-
-.message.normal {
-  color: #333;
-}
-
-.message.error {
-  color: #c62828;
-}
-
-.warning {
-  color: #c62828;
-}
 
 .recap-text {
   font-size: 1.08rem;
@@ -357,34 +340,59 @@ button:disabled {
     max-width: 360px;
   }
 }
-/* MESSAGE BASE */
+/* REPLACE all existing .message styles with this */
 .message {
   margin-top: 12px;
-  font-size: 1.2rem;
-  font-weight: 600;
+  min-height: 40px;
+  font-size: 1.6rem;
+  font-weight: 800;
   text-align: center;
-  min-height: 28px;
-  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+  opacity: 1;
 }
 
-/* CORRECT (GREEN TICK) */
-.message.success {
-  color: #00e676;
-  animation: popFlash 0.4s ease;
-  text-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
-}
-
-/* INCORRECT (RED X) */
-.message.error {
-  color: #ff3b3b;
-  animation: shakeFlash 0.4s ease;
-  text-shadow: 0 0 8px rgba(255, 59, 59, 0.6);
-}
-
-/* NORMAL */
 .message.normal {
-  color: #ffffff;
-  opacity: 0.85;
+  color: #333;
+}
+
+.message.success {
+  color: #00c853;
+  text-shadow: 0 0 10px rgba(0, 200, 83, 0.75);
+  animation: popFlash 0.55s ease;
+}
+
+.message.error {
+  color: #ff1744;
+  text-shadow: 0 0 10px rgba(255, 23, 68, 0.75);
+  animation: shakeFlash 0.55s ease;
+}
+
+.warning {
+  color: #c62828;
+}
+
+@keyframes popFlash {
+  0% {
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shakeFlash {
+  0% { transform: translateX(0); opacity: 0; }
+  20% { transform: translateX(-8px); opacity: 1; }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+  100% { transform: translateX(0); opacity: 1; }
 }
 
 /* POP EFFECT (CORRECT) */

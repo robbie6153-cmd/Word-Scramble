@@ -267,19 +267,38 @@ async function validateAnswer() {
 }
 
 function useChangeLetters() {
-  if (usedChange || roundSolved || !currentSet) return;
+  if (usedChange || roundSolved) return;
 
   usedChange = true;
   lastRoundPenaltyUsed = rounds[currentRoundIndex].penalty;
 
+  const roundObj = rounds[currentRoundIndex];
+  let newSet = getRandomWordForRound(roundObj);
+
+  if (!newSet) {
+    setMessage(`No ${roundObj.letters}-letter words found in dictionary.js`, "error");
+    return;
+  }
+
+  let safety = 0;
+  while (currentSet && newSet.letters === currentSet.letters && safety < 20) {
+    newSet = getRandomWordForRound(roundObj);
+    safety++;
+  }
+
+  currentSet = newSet;
+
   renderScramble(currentSet.letters);
 
-  timeLeft = rounds[currentRoundIndex].time;
+  timeLeft = roundObj.time;
   els.timer.classList.remove("warning");
   updateHUD();
 
+  els.answerInput.value = "";
+  els.answerInput.focus();
+
   updateChangeButton();
-  setMessage(`Letters changed. Penalty applied: -${lastRoundPenaltyUsed}. Timer reset.`, "normal");
+  setMessage(`New letters loaded. Penalty applied: -${lastRoundPenaltyUsed}. Timer reset.`, "normal");
 }
 
 function endRound(solved, answer = "") {

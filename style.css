@@ -27,7 +27,12 @@ body {
 .screen {
   width: 100%;
 }
-
+#game-screen,
+#recap-screen,
+#end-screen {
+  max-width: 560px;
+  margin: 0 auto;
+}
 .home-container {
   width: 100%;
 }

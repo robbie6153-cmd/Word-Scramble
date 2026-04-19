@@ -1,74 +1,18 @@
 const rounds = [
-  {
-    round: 1,
-    letters: 4,
-    time: 10,
-    penalty: 1,
-    sets: [
-      { letters: "POTS", answers: ["STOP", "POST", "SPOT", "TOPS", "POTS", "OPTS"] },
-      { letters: "RACE", answers: ["CARE", "RACE", "ACRE"] },
-      { letters: "EAST", answers: ["EAST", "SEAT", "EATS", "TEAS"] },
-      { letters: "NOTE", answers: ["NOTE", "TONE"] },
-      { letters: "MEAT", answers: ["TEAM", "MEAT", "MATE", "TAME"] }
-    ]
-  },
-  {
-    round: 2,
-    letters: 5,
-    time: 15,
-    penalty: 2,
-    sets: [
-      { letters: "SILENT", answers: ["LISTEN", "SILENT", "ENLIST", "TINSEL", "INLETS"] }, // optional extra long alt, remove if wanted
-      { letters: "HEART", answers: ["EARTH", "HEART", "HATER"] },
-      { letters: "ALERT", answers: ["ALERT", "ALTER", "LATER", "ARTEL", "RATEL"] },
-      { letters: "THING", answers: ["NIGHT", "THING"] },
-      { letters: "SCARE", answers: ["SCARE", "RACES", "CARES", "ACRES"] }
-    ].map(set => ({
-      ...set,
-      answers: set.answers.filter(word => word.length === 5)
-    }))
-  },
-  {
-    round: 3,
-    letters: 6,
-    time: 20,
-    penalty: 3,
-    sets: [
-      { letters: "STREAM", answers: ["MASTER", "STREAM", "TAMERS"] },
-      { letters: "REPAID", answers: ["PAIRED", "REPAID"] },
-      { letters: "SECURE", answers: ["SECURE", "RESCUE", "RECUSE"] },
-      { letters: "STALE", answers: ["STEAL", "STALE", "STAEL", "TALES", "TESLA"] }, // filtered below
-      { letters: "ANGEL", answers: ["ANGLE", "ANGEL", "GLEAN"] }
-    ].map(set => ({
-      ...set,
-      answers: set.answers.filter(word => word.length === 6)
-    }))
-  },
-  {
-    round: 4,
-    letters: 7,
-    time: 25,
-    penalty: 4,
-    sets: [
-      { letters: "RETAINS", answers: ["STAINER", "RETAINS", "RETINAS", "STEARIN", "ANTSIER"] },
-      { letters: "PAINTER", answers: ["PAINTER", "PERTAIN", "REPAINT"] },
-      { letters: "DEALING", answers: ["DEALING", "LEADING"] },
-      { letters: "RELATES", answers: ["RELATES", "STEALER", "RETALES"] },
-      { letters: "HEATING", answers: ["HEATING", "TEAHING"] } // filtered later by exact length, TEAHING removed if wanted
-    ].map(set => ({
-      ...set,
-      answers: [...new Set(set.answers.filter(word => word.length === 7))]
-    }))
-  },
+  { round: 1, letters: 4, time: 10, penalty: 1, mode: "dictionary" },
+  { round: 2, letters: 5, time: 15, penalty: 2, mode: "dictionary" },
+  { round: 3, letters: 6, time: 20, penalty: 3, mode: "dictionary" },
+  { round: 4, letters: 7, time: 25, penalty: 4, mode: "dictionary" },
+
   {
     round: 5,
     letters: 8,
     time: 30,
     penalty: 5,
+    mode: "manual",
     sets: [
       { letters: "INTEGRAL", answers: ["TRIANGLE", "INTEGRAL", "ALTERING", "RELATING"] },
       { letters: "REACTION", answers: ["CREATION", "REACTION"] },
-      { letters: "LISTENED", answers: ["SILENTED", "LISTENED"] }, // one simple direct option
       { letters: "DIRECTOR", answers: ["DIRECTOR", "CREDITOR"] },
       { letters: "NOTEBOOK", answers: ["NOTEBOOK"] }
     ].map(set => ({
@@ -76,11 +20,13 @@ const rounds = [
       answers: [...new Set(set.answers.filter(word => word.length === 8))]
     }))
   },
+
   {
     round: 6,
     letters: 9,
     time: 35,
     penalty: 6,
+    mode: "manual",
     sets: [
       { letters: "EDUCATION", answers: ["EDUCATION"] },
       { letters: "SOMETHING", answers: ["SOMETHING"] },
@@ -92,14 +38,15 @@ const rounds = [
       answers: [...new Set(set.answers.filter(word => word.length === 9))]
     }))
   },
+
   {
     round: 7,
     letters: 10,
     time: 40,
     penalty: 7,
+    mode: "manual",
     sets: [
       { letters: "BACKGROUND", answers: ["BACKGROUND"] },
-      { letters: "BLUEBERRYS", answers: ["BLUEBERRYS"] }, // placeholder; filtered/replace later
       { letters: "BLACKBERRY", answers: ["BLACKBERRY"] },
       { letters: "BASKETBALL", answers: ["BASKETBALL"] },
       { letters: "BOOKSELLER", answers: ["BOOKSELLER"] }
@@ -109,11 +56,6 @@ const rounds = [
     }))
   }
 ];
-
-// Clean up any accidental bad data
-rounds.forEach(r => {
-  r.sets = r.sets.filter(set => set.answers.length > 0 && set.letters.length >= r.letters);
-});
 
 const els = {
   startScreen: document.getElementById("start-screen"),
@@ -152,6 +94,10 @@ let roundSolved = false;
 let lastRoundPoints = 0;
 let lastRoundPenaltyUsed = 0;
 
+const dictionary = Array.isArray(window.DICTIONARY)
+  ? [...new Set(window.DICTIONARY.map(word => String(word).trim().toUpperCase()))]
+  : [];
+
 // ---------- Utility ----------
 function shuffleString(str) {
   const arr = str.split("");
@@ -162,12 +108,74 @@ function shuffleString(str) {
   return arr.join("");
 }
 
+function sortLetters(str) {
+  return str.split("").sort().join("");
+}
+
+function getDictionaryWordsOfLength(length) {
+  return dictionary.filter(word => /^[A-Z]+$/.test(word) && word.length === length);
+}
+
 function getRandomSetForRound(roundObj) {
-  const index = Math.floor(Math.random() * roundObj.sets.length);
-  const selected = roundObj.sets[index];
+  if (roundObj.mode === "manual") {
+    if (!roundObj.sets || !roundObj.sets.length) return null;
+
+    const index = Math.floor(Math.random() * roundObj.sets.length);
+    const selected = roundObj.sets[index];
+
+    return {
+      letters: selected.letters.toUpperCase(),
+      answers: selected.answers.map(a => a.toUpperCase())
+    };
+  }
+
+  const wordsOfLength = getDictionaryWordsOfLength(roundObj.letters);
+
+  if (!wordsOfLength.length) {
+    return null;
+  }
+
+  const groups = new Map();
+
+  wordsOfLength.forEach(word => {
+    const key = sortLetters(word);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(word);
+  });
+
+  const validGroups = [];
+
+  groups.forEach((answers, key) => {
+    const uniqueAnswers = [...new Set(answers)];
+    if (uniqueAnswers.length >= 2) {
+      validGroups.push({
+        letters: key,
+        answers: uniqueAnswers
+      });
+    }
+  });
+
+  if (!validGroups.length) {
+    return null;
+  }
+
+  const selected = validGroups[Math.floor(Math.random() * validGroups.length)];
+
   return {
-    letters: selected.letters.toUpperCase(),
-    answers: selected.answers.map(a => a.toUpperCase())
+    letters: selected.letters,
+    answers: selected.answers
+  };
+}
+
+  if (!validGroups.length) {
+    return null;
+  }
+
+  const selected = validGroups[Math.floor(Math.random() * validGroups.length)];
+
+  return {
+    letters: selected.letters,
+    answers: selected.answers
   };
 }
 
@@ -235,7 +243,6 @@ function startTimer() {
 function renderScramble(baseLetters) {
   let scrambled = shuffleString(baseLetters);
 
-  // Avoid accidental unchanged layout if possible
   let safety = 0;
   while (scrambled === baseLetters && safety < 10) {
     scrambled = shuffleString(baseLetters);
@@ -251,6 +258,15 @@ function renderScramble(baseLetters) {
   });
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function flashResult(text, type, duration = 900) {
+  setMessage(text, type);
+  await delay(duration);
+}
+
 function startRound() {
   roundSolved = false;
   usedChange = false;
@@ -259,6 +275,12 @@ function startRound() {
 
   const roundObj = rounds[currentRoundIndex];
   currentSet = getRandomSetForRound(roundObj);
+
+  if (!currentSet) {
+    setMessage(`No ${roundObj.letters}-letter words found in dictionary.js`, "error");
+    return;
+  }
+
   timeLeft = roundObj.time;
 
   els.answerInput.value = "";
@@ -294,7 +316,7 @@ function runCountdownAndStartRound() {
   }, 1000);
 }
 
-function validateAnswer() {
+async function validateAnswer() {
   if (!currentSet || roundSolved) return;
 
   const guess = els.answerInput.value.trim().toUpperCase();
@@ -313,9 +335,15 @@ function validateAnswer() {
     lastRoundPoints = earned;
     totalScore += earned;
     updateHUD();
+
+   await flashResult("✔ CORRECT!", "success", 900);
+  
     endRound(true, guess);
   } else {
-    setMessage("Not a valid answer for these letters", "error");
+   await flashResult("✖ WRONG!", "error", 900);
+    setMessage(`Solve the ${requiredLength}-letter anagram`, "normal");
+    els.answerInput.focus();
+    els.answerInput.select();
   }
 }
 
@@ -326,8 +354,13 @@ function useChangeLetters() {
   lastRoundPenaltyUsed = rounds[currentRoundIndex].penalty;
 
   renderScramble(currentSet.letters);
+
+  timeLeft = rounds[currentRoundIndex].time;
+  els.timer.classList.remove("warning");
+  updateHUD();
+
   updateChangeButton();
-  setMessage(`Letters changed. Penalty applied: -${lastRoundPenaltyUsed}`, "normal");
+  setMessage(`Letters changed. Penalty applied: -${lastRoundPenaltyUsed}. Timer reset.`, "normal");
 }
 
 function endRound(solved, answer = "") {
@@ -409,7 +442,6 @@ els.changeBtn.addEventListener("click", useChangeLetters);
 
 els.playAgainBtn.addEventListener("click", resetGame);
 
-// optional if you add a next-round button later
 if (els.nextRoundBtn) {
   els.nextRoundBtn.addEventListener("click", () => {
     if (currentRoundIndex < rounds.length - 1) {
